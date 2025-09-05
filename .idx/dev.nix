@@ -10,6 +10,7 @@
     pkgs.python311Packages.pip
     pkgs.nodejs_20
     pkgs.nodePackages.nodemon
+    pkgs.kubernetes
     pkgs.uv
     (pkgs.google-cloud-sdk.withExtraComponents [
       pkgs.google-cloud-sdk.components.cloud-datastore-emulator

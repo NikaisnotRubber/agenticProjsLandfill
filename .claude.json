@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "context-7": {
+      "command": "uv",
+      "args": ["--directory", "/home/user/context-7", "run", "context-7"],
+      "alwaysAllow": [
+        "read_resource",
+        "list_resources",
+        "list_tools",
+        "call_tool"
+      ]
+    }
+  }
+}
