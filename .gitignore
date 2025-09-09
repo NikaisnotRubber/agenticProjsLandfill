@@ -36,3 +36,6 @@ dist/
 *.wasm
 *.obj
 *.o
+
+#neo4J
+KnowledgeBase/.neo4j/*
