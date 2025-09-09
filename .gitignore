@@ -42,3 +42,6 @@ KnowledgeBase/.neo4j/*/
 
 # google
 .idx/*/
+
+# others
+tmp/*/
