@@ -6,7 +6,6 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.go
-    pkgs.sudo-rs
     pkgs.python311
     pkgs.python311Packages.pip
     pkgs.nodejs_20
