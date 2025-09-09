@@ -39,3 +39,6 @@ dist/
 
 #neo4J
 KnowledgeBase/.neo4j/*
+
+# google
+.idx/
