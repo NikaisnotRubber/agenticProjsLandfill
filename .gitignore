@@ -47,3 +47,4 @@ KnowledgeBase/.neo4j/*/
 tmp/*/
 tmp
 docs
+.claude.json
