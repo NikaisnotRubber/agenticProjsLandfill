@@ -2,8 +2,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { BaseAgent } from './base-agent'
 import { AgentConfig, WorkflowState } from '@/types/agent'
 import { IntentCategory } from '@/types/email'
-import { FeedbackGraphitiService } from '@/lib/services/feedback-graphiti-service'
-import { createGraphitiClient } from '@/lib/integrations/graphiti-client'
 
 export interface FeedbackData {
   feedbackId: string
@@ -70,8 +68,6 @@ export interface FeedbackData {
 }
 
 export class FeedbackAgent extends BaseAgent {
-  private feedbackGraphitiService: FeedbackGraphitiService
-  
   constructor() {
     const config: AgentConfig = {
       name: 'Feedback Processor',
@@ -119,10 +115,6 @@ export class FeedbackAgent extends BaseAgent {
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
     }
     super(config)
-    
-    // 初始化Graphiti服務
-    const graphitiClient = createGraphitiClient()
-    this.feedbackGraphitiService = new FeedbackGraphitiService(graphitiClient)
   }
 
   async execute(state: WorkflowState): Promise<WorkflowState> {
@@ -286,29 +278,6 @@ ${messages.map(msg => `[${msg.type}] ${msg.content}`).join('\n')}
         }
       }
 
-      // 將反饋數據導入Graphiti知識圖譜
-      console.log('🔄 開始將反饋數據導入Graphiti知識圖譜...')
-      try {
-        const ingestionResult = await this.feedbackGraphitiService.ingestFeedbackData(feedbackData)
-        
-        if (ingestionResult.success) {
-          console.log(`✅ 反饋數據成功導入Graphiti: ${ingestionResult.episodeIds.length}個episodes`)
-        } else {
-          console.warn(`⚠️ 反饋數據導入Graphiti部分失敗: ${ingestionResult.errors.join(', ')}`)
-        }
-        
-        // 搜索相似的錯誤模式以提供改進建議
-        const similarFeedbackQuery = `錯誤類型: ${feedbackData.errorAnalysis.errorType} 分類: ${feedbackData.originalClassification.category}`
-        const similarFeedback = await this.feedbackGraphitiService.searchSimilarFeedback(similarFeedbackQuery, 5)
-        
-        if (similarFeedback.success && similarFeedback.results.length > 0) {
-          console.log(`📊 找到${similarFeedback.results.length}個相似的錯誤模式`)
-        }
-        
-      } catch (graphitiError) {
-        console.error('❌ Graphiti導入失敗，但反饋處理繼續:', graphitiError)
-      }
-
       // 更新狀態
       const updatedState: WorkflowState = {
         ...state,
@@ -316,7 +285,7 @@ ${messages.map(msg => `[${msg.type}] ${msg.content}`).join('\n')}
         messages: [...state.messages, {
           id: uuidv4(),
           type: 'system',
-          content: `反饋數據處理完成並導入知識圖譜，ID: ${feedbackData.feedbackId}`,
+          content: `反饋數據處理完成，ID: ${feedbackData.feedbackId}`,
           timestamp: new Date()
         }]
       }
