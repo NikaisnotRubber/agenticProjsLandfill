@@ -38,7 +38,7 @@ dist/
 *.o
 
 #neo4J
-KnowledgeBase/.neo4j/*
+KnowledgeBase/.neo4j/*/
 
 # google
-.idx/*
+.idx/*/
