@@ -45,3 +45,5 @@ KnowledgeBase/.neo4j/*/
 
 # others
 tmp/*/
+tmp
+docs
