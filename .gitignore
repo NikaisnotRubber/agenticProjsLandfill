@@ -5,7 +5,8 @@ target/
 # Node artifacts
 build/
 prebuilds/
-node_modules/
+jiraCSAgent/node_modules
+
 *.tgz
 
 # Swift artifacts
