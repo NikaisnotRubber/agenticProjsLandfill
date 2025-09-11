@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Email {
+  id          String   @id @default(cuid())
+  subject     String
+  body        String
+  sender      String
+  receiver    String
+  timestamp   DateTime
+  source      EmailSource
+  priority    Priority @default(MEDIUM)
+  hasLogs     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  attachments       Attachment[]
+  processingResult  ProcessingResult?
+
+  @@map("emails")
+}
+
+model Attachment {
+  id        String  @id @default(cuid())
+  name      String
+  content   String?
+  type      String
+  emailId   String
+  email     Email   @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("attachments")
+}
+
+model ProcessingResult {
+  id              String         @id @default(cuid())
+  emailId         String         @unique
+  category        IntentCategory
+  confidence      Float
+  reasoning       String
+  keyIndicators   String[]
+  suggestedAction String
+  agentResponse   String
+  status          ProcessingStatus @default(PROCESSING)
+  processingTime  Int            // in milliseconds
+  processedAt     DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  email           Email          @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  feedback        Feedback?
+  emailReply      EmailReply?
+
+  @@map("processing_results")
+}
+
+model Feedback {
+  id                  String           @id @default(cuid())
+  processingResultId  String           @unique
+  content             String
+  rating              Int?             // 1-5 rating
+  createdAt           DateTime         @default(now())
+
+  // Relations
+  processingResult    ProcessingResult @relation(fields: [processingResultId], references: [id], onDelete: Cascade)
+
+  @@map("feedback")
+}
+
+model EmailReply {
+  id                  String           @id @default(cuid())
+  processingResultId  String           @unique
+  replyContent        String
+  recipientEmail      String
+  subject             String
+  sentAt              DateTime?
+  status              ReplyStatus      @default(DRAFT)
+  createdAt           DateTime         @default(now())
+
+  // Relations
+  processingResult    ProcessingResult @relation(fields: [processingResultId], references: [id], onDelete: Cascade)
+
+  @@map("email_replies")
+}
+
+// Enums
+enum EmailSource {
+  OUTLOOK
+  GMAIL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum IntentCategory {
+  JIRA_SIMPLE
+  JIRA_COMPLEX
+  GENERAL
+}
+
+enum ProcessingStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReplyStatus {
+  DRAFT
+  SENT
+  FAILED
+}

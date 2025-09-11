@@ -49,3 +49,5 @@ tmp/*/
 tmp
 docs
 .claude.json
+.env
+jiraCSAgent/.env.local
