@@ -6,11 +6,37 @@ import { EmailSchema } from '@/types/email'
 // 全局郵件管理器實例（在實際應用中應該使用依賴注入）
 let emailManager: EmailManager | null = null
 
+// 驗證環境變數是否為有效值（不是佔位符）
+function isValidEnvValue(value: string | undefined): boolean {
+  if (!value) return false
+  const placeholders = [
+    'your_outlook_client_id',
+    'your_outlook_client_secret', 
+    'your_outlook_tenant_id',
+    'your_gmail_client_id',
+    'your_gmail_client_secret',
+    'your_gmail_refresh_token',
+    'your_secret_here'
+  ]
+  return !placeholders.includes(value.toLowerCase())
+}
+
 function getEmailManager(): EmailManager {
   if (!emailManager) {
+    // 驗證 Outlook 配置
+    const outlookConfigured = process.env.OUTLOOK_CLIENT_ID && 
+      isValidEnvValue(process.env.OUTLOOK_CLIENT_ID) &&
+      isValidEnvValue(process.env.OUTLOOK_CLIENT_SECRET) &&
+      isValidEnvValue(process.env.OUTLOOK_TENANT_ID)
+
+    // 驗證 Gmail 配置
+    const gmailConfigured = process.env.GMAIL_CLIENT_ID && 
+      isValidEnvValue(process.env.GMAIL_CLIENT_ID) &&
+      isValidEnvValue(process.env.GMAIL_CLIENT_SECRET)
+
     // 從環境變數讀取配置
     const config = {
-      outlook: process.env.OUTLOOK_CLIENT_ID ? {
+      outlook: outlookConfigured ? {
         credentials: {
           clientId: process.env.OUTLOOK_CLIENT_ID!,
           clientSecret: process.env.OUTLOOK_CLIENT_SECRET!,
@@ -24,7 +50,7 @@ function getEmailManager(): EmailManager {
           maxEmailAge: 7 // 7天內的郵件
         }
       } : undefined,
-      gmail: process.env.GMAIL_CLIENT_ID ? {
+      gmail: gmailConfigured ? {
         credentials: {
           clientId: process.env.GMAIL_CLIENT_ID!,
           clientSecret: process.env.GMAIL_CLIENT_SECRET!,
@@ -39,8 +65,8 @@ function getEmailManager(): EmailManager {
         }
       } : undefined,
       enabledServices: [
-        ...(process.env.OUTLOOK_CLIENT_ID ? ['outlook' as const] : []),
-        ...(process.env.GMAIL_CLIENT_ID ? ['gmail' as const] : [])
+        ...(outlookConfigured ? ['outlook' as const] : []),
+        ...(gmailConfigured ? ['gmail' as const] : [])
       ],
       defaultProcessingConfig: {
         autoMarkAsRead: false,
@@ -99,12 +125,26 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const manager = getEmailManager()
-    const status = manager.getServiceStatus()
+    const status = await manager.getServiceStatus()
     const stats = manager.getStats()
+    
+    // 同時添加已配置的服務列表到統計資訊
+    const configuredServices = []
+    if (process.env.OUTLOOK_CLIENT_ID && isValidEnvValue(process.env.OUTLOOK_CLIENT_ID)) {
+      configuredServices.push('outlook')
+    }
+    if (process.env.GMAIL_CLIENT_ID && isValidEnvValue(process.env.GMAIL_CLIENT_ID)) {
+      configuredServices.push('gmail')
+    }
+    
+    const enhancedStats = {
+      ...stats,
+      configuredServices
+    }
     
     return NextResponse.json({
       status,
-      stats
+      stats: enhancedStats
     })
     
   } catch (error: unknown) {

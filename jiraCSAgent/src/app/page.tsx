@@ -88,7 +88,7 @@ export default function HomePage() {
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm text-gray-500">
-            AgentiMailCS - 基於 OpenAI API 和 LangGraph 的多智能體郵件處理系統
+            AgentiMailCS - 基於 OpenAI Compatible API 和 LangGraph 的多智能體郵件處理系統
           </p>
         </div>
       </footer>

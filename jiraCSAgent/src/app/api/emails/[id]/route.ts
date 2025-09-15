@@ -3,10 +3,11 @@ import { EmailService } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const email = await EmailService.findById(params.id)
+    const { id } = await params
+    const email = await EmailService.findById(id)
     
     if (!email) {
       return NextResponse.json(
@@ -36,10 +37,11 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await EmailService.delete(params.id)
+    const { id } = await params
+    await EmailService.delete(id)
     
     return NextResponse.json({
       success: true,

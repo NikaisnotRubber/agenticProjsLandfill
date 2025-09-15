@@ -220,12 +220,21 @@ AgentiMailCS 自動處理系統
   }
 
   // 獲取服務狀態
-  getServiceStatus(): { [key in EmailSource]?: { authenticated: boolean; polling: boolean } } {
+  async getServiceStatus(): Promise<{ [key in EmailSource]?: { authenticated: boolean; polling: boolean } }> {
     const status: { [key in EmailSource]?: { authenticated: boolean; polling: boolean } } = {}
 
     for (const [source, service] of this.services) {
+      // 實際測試每個服務的認證狀態
+      let isAuthenticated = false
+      try {
+        isAuthenticated = await service.authenticate()
+      } catch (error) {
+        console.warn(`Authentication test failed for ${source}:`, error)
+        isAuthenticated = false
+      }
+
       status[source] = {
-        authenticated: !!service, // 簡化的檢查
+        authenticated: isAuthenticated,
         polling: this.isProcessing
       }
     }
