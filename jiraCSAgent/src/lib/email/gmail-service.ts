@@ -5,17 +5,42 @@ import { Email } from '@/types/email'
 export class GmailEmailService extends BaseEmailService {
   private gmail: any = null
   private lastHistoryId: string | null = null
+  private isAuthenticated: boolean = false
+  private lastAuthCheck: Date | null = null
+  private readonly AUTH_CHECK_INTERVAL = 5 * 60 * 1000 // 5分鐘
 
   constructor(config: EmailServiceConfig) {
     super(config)
   }
 
   async authenticate(): Promise<boolean> {
+    // 如果最近已檢查過且成功，直接返回結果
+    if (this.lastAuthCheck && 
+        Date.now() - this.lastAuthCheck.getTime() < this.AUTH_CHECK_INTERVAL &&
+        this.isAuthenticated) {
+      return true
+    }
+
     try {
       const { clientId, clientSecret, refreshToken } = this.config.credentials
 
       if (!clientId || !clientSecret || !refreshToken) {
-        throw new Error('Missing required Gmail credentials')
+        this.isAuthenticated = false
+        this.lastAuthCheck = new Date()
+        return false
+      }
+
+      // 如果已有client且最近驗證成功，先嘗試簡單測試
+      if (this.gmail && this.isAuthenticated) {
+        try {
+          await this.gmail.users.getProfile({ userId: 'me' })
+          this.lastAuthCheck = new Date()
+          return true
+        } catch {
+          // 如果簡單測試失敗，重新認證
+          this.gmail = null
+          this.isAuthenticated = false
+        }
       }
 
       // 設置OAuth2客戶端
@@ -34,12 +59,16 @@ export class GmailEmailService extends BaseEmailService {
 
       // 測試連接
       await this.gmail.users.getProfile({ userId: 'me' })
+      this.isAuthenticated = true
+      this.lastAuthCheck = new Date()
       console.log('Gmail authentication successful')
       return true
 
     } catch (error: unknown) {
       console.error('Gmail authentication failed:', error)
       this.gmail = null
+      this.isAuthenticated = false
+      this.lastAuthCheck = new Date()
       return false
     }
   }

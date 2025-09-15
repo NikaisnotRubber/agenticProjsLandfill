@@ -70,7 +70,8 @@ ${email.hasLogs ? '包含日誌資訊' : ''}
 
       const prompt = `請分析以下郵件並進行分類：\n${emailContext}`
       
-      const response = await this.generateResponse(prompt)
+      // Test direct OpenAI service integration
+      const response = await this.generateResponseDirect(prompt)
       
       // 解析AI回應
       let classificationResult: ClassificationResult

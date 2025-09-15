@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatOpenAI } from '@langchain/openai'
+import OpenAI from 'openai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,34 +14,37 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // 創建 ChatOpenAI 實例用於測試
-    const llm = new ChatOpenAI({
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      configuration: {
-        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
-      },
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-      temperature: 0.1,
-      maxTokens: 50
+    // 創建 OpenAI 客戶端實例用於測試
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
     })
 
     // 發送簡單的測試訊息
     const testMessage = message || '請回覆 "連接成功" 以確認 AI 服務正常運作'
     
     const startTime = Date.now()
-    const response = await llm.invoke([
-      { role: 'user', content: testMessage }
-    ])
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: testMessage }],
+      temperature: 0.1,
+      max_tokens: 50
+    })
     const endTime = Date.now()
 
     return NextResponse.json({
       success: true,
       response: {
-        message: response.content,
+        message: response.choices[0]?.message?.content || '',
         responseTime: endTime - startTime,
         model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
         provider: 'OpenAI Compatible',
-        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+        usage: {
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0
+        }
       }
     })
 

@@ -62,7 +62,7 @@ export class ResultEvaluatorAgent extends BaseAgent {
   "recommendedAction": "reclassify"
 }`,
       temperature: 0.1,
-      maxTokens: 800,
+      maxTokens: 1024,
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
     }
     super(config)
