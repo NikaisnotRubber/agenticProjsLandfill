@@ -52,7 +52,7 @@ export class JiraComplexHandlerAgent extends BaseAgent {
 - 監控與預防措施`,
       temperature: 0.1,
       maxTokens: 1200,
-      model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
+      model: process.env.OPENAI_MODEL || 'gpt-4'
     }
     super(config)
   }
@@ -95,7 +95,7 @@ ${hasLogs ? '特別注意：此問題包含日誌資訊，請進行詳細的日�
 ${logAttachments && logAttachments.length > 0 ? '請考慮附件中可能包含的錯誤資訊。' : ''}
 `
 
-      const response = await this.generateResponse(prompt)
+      const response = await this.generateResponseDirect(prompt)
 
       // 更新狀態
       let updatedState = this.addMessage(state, 'human', '正在進行深度技術分析...')
@@ -120,7 +120,11 @@ ${logAttachments && logAttachments.length > 0 ? '請考慮附件中可能包含�
       const errorMessage = error instanceof Error ? error.message : '處理複雜問題時發生錯誤'
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'jira_complex_handler',
+          timestamp: new Date().toISOString()
+        },
         result: {
           action: 'jira_complex_resolution',
           response: `技術分析失敗: ${errorMessage}`,

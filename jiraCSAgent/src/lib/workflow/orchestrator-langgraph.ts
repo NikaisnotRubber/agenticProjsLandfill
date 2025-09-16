@@ -129,7 +129,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ 郵件分類失敗:', error)
       return {
         ...state,
-        error: `分類失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `分類失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'email_classifier',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -163,7 +167,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ Jira簡單問題處理失敗:', error)
       return {
         ...state,
-        error: `Jira簡單問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `Jira簡單問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'jira_simple_handler',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -179,7 +187,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ Jira複雜問題處理失敗:', error)
       return {
         ...state,
-        error: `Jira複雜問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `Jira複雜問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'jira_complex_handler',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -195,7 +207,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ 一般問題處理失敗:', error)
       return {
         ...state,
-        error: `一般問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `一般問題處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'general_handler',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -211,7 +227,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ 結果評估失敗:', error)
       return {
         ...state,
-        error: `結果評估失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `結果評估失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'result_evaluator',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -265,7 +285,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ 重新分類失敗:', error)
       return {
         ...state,
-        error: `重新分類失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `重新分類失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'reclassify_email',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -326,7 +350,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('❌ 反饋處理失敗:', error)
       return {
         ...state,
-        error: `反饋處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`
+        error: {
+          message: `反饋處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'feedback_processor',
+          timestamp: new Date().toISOString()
+        }
       }
     }
   }
@@ -394,7 +422,11 @@ export class LangGraphStyleEmailWorkflowOrchestrator {
       console.error('💥 LangGraph風格工作流程執行失敗:', error)
       return {
         ...initialState,
-        error: `工作流程執行失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+        error: {
+          message: `工作流程執行失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'orchestrator',
+          timestamp: new Date().toISOString()
+        },
         result: {
           action: 'workflow_error',
           response: '工作流程執行過程中發生錯誤',

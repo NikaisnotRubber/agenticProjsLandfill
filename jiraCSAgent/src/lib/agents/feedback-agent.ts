@@ -164,7 +164,7 @@ ${messages.map(msg => `[${msg.type}] ${msg.content}`).join('\n')}
 
       const prompt = `請分析以下分類錯誤情況並生成結構化的反饋數據：\n${feedbackContext}`
       
-      const response = await this.generateResponse(prompt)
+      const response = await this.generateResponseDirect(prompt)
       
       // 解析反饋數據
       let feedbackData: FeedbackData
@@ -299,7 +299,11 @@ ${messages.map(msg => `[${msg.type}] ${msg.content}`).join('\n')}
       
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'feedback-agent',
+          timestamp: new Date().toISOString()
+        },
         messages: [...state.messages, {
           id: uuidv4(),
           type: 'system',

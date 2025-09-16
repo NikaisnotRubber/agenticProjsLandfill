@@ -71,7 +71,7 @@ ${emailContent}
 4. 預防類似問題的建議
 `
 
-      const response = await this.generateResponse(prompt)
+      const response = await this.generateResponseDirect(prompt)
 
       // 更新狀態
       let updatedState = this.addMessage(state, 'human', '正在處理Jira簡單問題...')
@@ -93,7 +93,11 @@ ${emailContent}
       const errorMessage = error instanceof Error ? error.message : '處理簡單問題時發生錯誤'
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'jira-simple-handler',
+          timestamp: new Date().toISOString()
+        },
         result: {
           action: 'jira_simple_resolution',
           response: `處理失敗: ${errorMessage}`,

@@ -155,7 +155,11 @@ export class EmailManager {
       
       const errorState: WorkflowState = {
         ...initialState,
-        error: `處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+        error: {
+          message: `處理失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          source: 'email-manager',
+          timestamp: new Date().toISOString()
+        },
         result: {
           action: 'error',
           response: '郵件處理失敗',
