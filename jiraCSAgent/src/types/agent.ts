@@ -118,7 +118,12 @@ export const WorkflowStateSchema = z.object({
   }).optional(),
   evaluation: EvaluationResultSchema.optional(),
   feedbackData: FeedbackDataSchema.optional(),
-  error: z.string().optional()
+  error: z.object({
+    message: z.string(),
+    source: z.string(),
+    code: z.number().optional(),
+    timestamp: z.string().optional()
+  }).optional()
 })
 
 export type WorkflowState = z.infer<typeof WorkflowStateSchema>

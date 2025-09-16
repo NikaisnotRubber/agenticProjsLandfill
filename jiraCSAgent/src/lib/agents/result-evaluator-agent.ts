@@ -62,7 +62,7 @@ export class ResultEvaluatorAgent extends BaseAgent {
   "recommendedAction": "reclassify"
 }`,
       temperature: 0.1,
-      maxTokens: 1024,
+      maxTokens: 2048,
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
     }
     super(config)
@@ -102,8 +102,9 @@ export class ResultEvaluatorAgent extends BaseAgent {
 
       const prompt = `請評估以下郵件的分類和處理結果是否正確：\n${evaluationContext}`
       
-      const response = await this.generateResponse(prompt)
-      
+      const response = await this.generateResponseDirect(prompt)
+      console.log('評估AI回應:', response)
+
       // 解析評估結果
       let evaluationResult: EvaluationResult
       try {
@@ -154,7 +155,11 @@ export class ResultEvaluatorAgent extends BaseAgent {
       
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'result-evaluator-agent',
+          timestamp: new Date().toISOString()
+        },
         messages: [...state.messages, {
           id: uuidv4(),
           type: 'system',

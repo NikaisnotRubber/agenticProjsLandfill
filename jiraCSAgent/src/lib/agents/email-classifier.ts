@@ -49,7 +49,7 @@ export class EmailClassifierAgent extends BaseAgent {
   "suggestedAction": "提供登入指導"
 }`,
       temperature: 0.1,
-      maxTokens: 600,
+      maxTokens: 1024,
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
     }
     super(config)
@@ -76,6 +76,26 @@ ${email.hasLogs ? '包含日誌資訊' : ''}
       // 解析AI回應
       let classificationResult: ClassificationResult
       try {
+        // 若回應為空，直接給出保守預設分類，避免 JSON.parse('') 錯誤
+        if (!response || response.trim().length === 0) {
+          console.warn('EmailClassifierAgent: 收到空的AI回應，使用預設分類。')
+          classificationResult = {
+            category: 'general',
+            confidence: 0.5,
+            reasoning: 'AI回應為空，使用預設分類。',
+            keyIndicators: [],
+            suggestedAction: '需要人工審核'
+          }
+          // 直接返回避免進一步解析
+          let updatedState = this.addMessage(state, 'ai', `郵件已分類為: ${classificationResult.category}`)
+          updatedState = {
+            ...updatedState,
+            classification: classificationResult,
+            currentAgent: 'email_classifier'
+          }
+          return updatedState
+        }
+
         // 清理回應，移除可能的markdown格式和多餘的文字
         let cleanResponse = response.trim()
         
@@ -88,7 +108,28 @@ ${email.hasLogs ? '包含日誌資訊' : ''}
         }
         
         // 移除可能的markdown代碼塊標記
-        cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+        cleanResponse = cleanResponse
+          .replace(/```json\r?\n?/gi, '')
+          .replace(/```\r?\n?/g, '')
+
+        // 若清理後仍為空，使用保守預設分類
+        if (!cleanResponse || cleanResponse.trim().length === 0) {
+          console.warn('EmailClassifierAgent: 清理後JSON為空，使用預設分類。')
+          classificationResult = {
+            category: 'general',
+            confidence: 0.5,
+            reasoning: 'AI回應清理後為空，使用預設分類。',
+            keyIndicators: [],
+            suggestedAction: '需要人工審核'
+          }
+          let updatedState = this.addMessage(state, 'ai', `郵件已分類為: ${classificationResult.category}`)
+          updatedState = {
+            ...updatedState,
+            classification: classificationResult,
+            currentAgent: 'email_classifier'
+          }
+          return updatedState
+        }
         
         console.log('AI原始回應:', response)
         console.log('清理後的JSON:', cleanResponse)
@@ -104,7 +145,7 @@ ${email.hasLogs ? '包含日誌資訊' : ''}
       } catch (parseError) {
         console.error('JSON解析失敗:', parseError)
         console.error('原始回應:', response)
-        
+
         // 如果JSON解析失敗，提供默認分類
         classificationResult = {
           category: 'general',
@@ -129,7 +170,11 @@ ${email.hasLogs ? '包含日誌資訊' : ''}
       const errorMessage = error instanceof Error ? error.message : '分類過程中發生未知錯誤'
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'email-classifier',
+          timestamp: new Date().toISOString()
+        },
         messages: [...state.messages, {
           id: uuidv4(),
           type: 'system',

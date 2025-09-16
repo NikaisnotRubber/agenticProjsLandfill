@@ -64,7 +64,7 @@ ${emailContent}
 如果你認為此問題實際上屬於Jira相關問題但被錯誤分類，請在回應開頭明確指出並說明理由。
 `
 
-      const response = await this.generateResponse(prompt)
+      const response = await this.generateResponseDirect(prompt)
 
       // 檢查是否建議重新分類
       const needsReclassification = response.toLowerCase().includes('錯誤分類') || 
@@ -93,7 +93,11 @@ ${emailContent}
       const errorMessage = error instanceof Error ? error.message : '處理一般問題時發生錯誤'
       return {
         ...state,
-        error: errorMessage,
+        error: {
+          message: errorMessage,
+          source: 'general-handler',
+          timestamp: new Date().toISOString()
+        },
         result: {
           action: 'general_resolution',
           response: `處理失敗: ${errorMessage}`,
