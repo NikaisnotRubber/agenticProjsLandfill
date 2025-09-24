@@ -51,6 +51,14 @@ export class JiraSimpleHandlerAgent extends BaseAgent {
   async execute(state: WorkflowState): Promise<WorkflowState> {
     const { email, classification } = state
 
+    console.log('🔧 [JiraSimpleHandler] 開始執行處理...')
+    console.log('📧 [JiraSimpleHandler] 處理郵件:', JSON.stringify({
+      emailId: email.id,
+      subject: email.subject,
+      sender: email.sender,
+      classification: classification
+    }, null, 2))
+
     try {
       const emailContent = `
 主題: ${email.subject}
@@ -71,27 +79,49 @@ ${emailContent}
 4. 預防類似問題的建議
 `
 
+      console.log('🤖 [JiraSimpleHandler] 發送AI請求...')
       const response = await this.generateResponseDirect(prompt)
+      console.log('✅ [JiraSimpleHandler] AI回應已收到，長度:', response.length)
 
       // 更新狀態
       let updatedState = this.addMessage(state, 'human', '正在處理Jira簡單問題...')
       updatedState = this.addMessage(updatedState, 'ai', response)
+
+      const resultMetadata = {
+        category: 'jira_simple',
+        handlerAgent: 'jira_simple_handler',
+        responseLength: response.length,
+        processingTime: new Date().toISOString()
+      }
+
       updatedState = this.updateResult(
         updatedState,
         'jira_simple_resolution',
         response,
         'completed',
-        {
-          category: 'jira_simple',
-          handlerAgent: 'jira_simple_handler'
-        }
+        resultMetadata
       )
+
+      console.log('✅ [JiraSimpleHandler] 處理完成結果:', JSON.stringify({
+        action: 'jira_simple_resolution',
+        status: 'completed',
+        responsePreview: response.substring(0, 100) + '...',
+        metadata: resultMetadata,
+        messageCount: updatedState.messages.length
+      }, null, 2))
 
       return updatedState
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '處理簡單問題時發生錯誤'
-      return {
+
+      console.error('❌ [JiraSimpleHandler] 處理失敗:', JSON.stringify({
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        emailId: email.id
+      }, null, 2))
+
+      const errorState = {
         ...state,
         error: {
           message: errorMessage,
@@ -101,9 +131,17 @@ ${emailContent}
         result: {
           action: 'jira_simple_resolution',
           response: `處理失敗: ${errorMessage}`,
-          status: 'failed'
+          status: 'failed' as const
         }
       }
+
+      console.log('❌ [JiraSimpleHandler] 返回錯誤狀態:', JSON.stringify({
+        hasError: !!errorState.error,
+        hasResult: !!errorState.result,
+        resultStatus: errorState.result?.status
+      }, null, 2))
+
+      return errorState
     }
   }
 }

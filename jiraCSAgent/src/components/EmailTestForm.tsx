@@ -54,6 +54,7 @@ export function EmailTestForm() {
       const data = await response.json()
 
       if (data.success) {
+        console.log('API Response data:', JSON.stringify(data, null, 2))
         setResult(data.result)
       } else {
         setError(data.error || '處理失敗')
@@ -228,7 +229,22 @@ export function EmailTestForm() {
       {result && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">處理結果</h3>
-          
+
+
+          {/* 錯誤信息 */}
+          {result.error && (
+            <div className="mb-6">
+              <h4 className="text-md font-medium text-red-800 mb-2">處理錯誤</h4>
+              <div className="bg-red-50 p-4 rounded">
+                <p><strong>錯誤信息:</strong> {result.error.message}</p>
+                <p><strong>錯誤來源:</strong> {result.error.source}</p>
+                {result.error.timestamp && (
+                  <p><strong>時間:</strong> {result.error.timestamp}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* 分類結果 */}
           {result.classification && (
             <div className="mb-6">
@@ -244,19 +260,39 @@ export function EmailTestForm() {
           )}
 
           {/* AI回應 */}
-          {result.result && (
+          {result.result ? (
             <div className="mb-6">
               <h4 className="text-md font-medium text-gray-800 mb-2">AI代理回應</h4>
               <div className="bg-blue-50 p-4 rounded">
-                <p className="whitespace-pre-wrap">{result.result.response}</p>
+                <p><strong>狀態:</strong> {result.result.status}</p>
+                <p><strong>動作:</strong> {result.result.action}</p>
+                <div className="mt-2">
+                  <strong>回應內容:</strong>
+                  <p className="whitespace-pre-wrap mt-1">{result.result.response}</p>
+                </div>
+                {result.result.metadata && (
+                  <div className="mt-2">
+                    <strong>附加信息:</strong>
+                    <pre className="text-xs bg-gray-100 p-2 rounded mt-1">
+                      {JSON.stringify(result.result.metadata, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6">
+              <h4 className="text-md font-medium text-gray-800 mb-2">AI代理回應</h4>
+              <div className="bg-red-50 p-4 rounded">
+                <p className="text-red-600">沒有收到AI代理的回應</p>
               </div>
             </div>
           )}
 
           {/* 處理訊息 */}
-          {result.messages && result.messages.length > 0 && (
+          {result.messages && result.messages.length > 0 ? (
             <div>
-              <h4 className="text-md font-medium text-gray-800 mb-2">處理流程</h4>
+              <h4 className="text-md font-medium text-gray-800 mb-2">處理流程 ({result.messages.length} 條訊息)</h4>
               <div className="space-y-2">
                 {result.messages.map((message, index) => (
                   <div key={index} className="flex items-start space-x-2 text-sm">
@@ -271,6 +307,13 @@ export function EmailTestForm() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-md font-medium text-gray-800 mb-2">處理流程</h4>
+              <div className="bg-red-50 p-4 rounded">
+                <p className="text-red-600">沒有處理流程記錄</p>
               </div>
             </div>
           )}

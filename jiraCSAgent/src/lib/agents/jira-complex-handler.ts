@@ -60,14 +60,31 @@ export class JiraComplexHandlerAgent extends BaseAgent {
   async execute(state: WorkflowState): Promise<WorkflowState> {
     const { email, classification } = state
 
+    console.log('🔧 [JiraComplexHandler] 開始執行複雜問題處理...')
+    console.log('📧 [JiraComplexHandler] 處理郵件:', JSON.stringify({
+      emailId: email.id,
+      subject: email.subject,
+      sender: email.sender,
+      hasLogs: email.hasLogs,
+      attachmentCount: email.attachments?.length || 0,
+      classification: classification
+    }, null, 2))
+
     try {
       // 分析是否包含日誌資訊
       const hasLogs = email.hasLogs || email.body.includes('error') || email.body.includes('exception') || email.body.includes('log')
-      
+
       // 檢查附件中是否有日誌
-      const logAttachments = email.attachments?.filter(att => 
+      const logAttachments = email.attachments?.filter(att =>
         att.name.includes('log') || att.name.includes('.txt') || att.type.includes('text')
       )
+
+      console.log('🔍 [JiraComplexHandler] 技術分析結果:', JSON.stringify({
+        hasLogs,
+        logAttachmentCount: logAttachments?.length || 0,
+        logAttachmentNames: logAttachments?.map(att => att.name) || [],
+        bodyContainsErrorKeywords: email.body.toLowerCase().includes('error') || email.body.toLowerCase().includes('exception')
+      }, null, 2))
 
       const emailContent = `
 主題: ${email.subject}
@@ -85,7 +102,7 @@ ${emailContent}
 
 請提供完整的技術分析：
 1. 技術問題診斷
-2. 根本原因分析  
+2. 根本原因分析
 3. 分階段解決方案
 4. 相關程式碼範例或配置（如適用）
 5. 測試與驗證步驟
@@ -95,30 +112,52 @@ ${hasLogs ? '特別注意：此問題包含日誌資訊，請進行詳細的日�
 ${logAttachments && logAttachments.length > 0 ? '請考慮附件中可能包含的錯誤資訊。' : ''}
 `
 
+      console.log('🤖 [JiraComplexHandler] 發送AI技術分析請求...')
       const response = await this.generateResponseDirect(prompt)
+      console.log('✅ [JiraComplexHandler] AI技術分析完成，回應長度:', response.length)
 
       // 更新狀態
       let updatedState = this.addMessage(state, 'human', '正在進行深度技術分析...')
       updatedState = this.addMessage(updatedState, 'ai', response)
+
+      const resultMetadata = {
+        category: 'jira_complex',
+        handlerAgent: 'jira_complex_handler',
+        hasLogs,
+        attachmentCount: logAttachments?.length || 0,
+        technicalComplexity: 'high',
+        responseLength: response.length,
+        processingTime: new Date().toISOString()
+      }
+
       updatedState = this.updateResult(
         updatedState,
         'jira_complex_resolution',
         response,
         'completed',
-        {
-          category: 'jira_complex',
-          handlerAgent: 'jira_complex_handler',
-          hasLogs,
-          attachmentCount: logAttachments?.length || 0,
-          technicalComplexity: 'high'
-        }
+        resultMetadata
       )
+
+      console.log('✅ [JiraComplexHandler] 複雜問題處理完成:', JSON.stringify({
+        action: 'jira_complex_resolution',
+        status: 'completed',
+        responsePreview: response.substring(0, 150) + '...',
+        metadata: resultMetadata,
+        messageCount: updatedState.messages.length
+      }, null, 2))
 
       return updatedState
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '處理複雜問題時發生錯誤'
-      return {
+
+      console.error('❌ [JiraComplexHandler] 技術分析失敗:', JSON.stringify({
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        emailId: email.id
+      }, null, 2))
+
+      const errorState = {
         ...state,
         error: {
           message: errorMessage,
@@ -128,9 +167,17 @@ ${logAttachments && logAttachments.length > 0 ? '請考慮附件中可能包含�
         result: {
           action: 'jira_complex_resolution',
           response: `技術分析失敗: ${errorMessage}`,
-          status: 'failed'
+          status: 'failed' as const
         }
       }
+
+      console.log('❌ [JiraComplexHandler] 返回錯誤狀態:', JSON.stringify({
+        hasError: !!errorState.error,
+        hasResult: !!errorState.result,
+        resultStatus: errorState.result?.status
+      }, null, 2))
+
+      return errorState
     }
   }
 }
