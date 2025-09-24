@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a multi-agent email processing system called **AgentiMailCS** that intelligently classifies and processes emails from Outlook or Gmail using OpenAI API and LangGraph. The system consists of two main components:
+This is **AgentiMailCS** - a sophisticated multi-agent email processing system that intelligently classifies and processes customer support emails from Outlook or Gmail. The system uses OpenAI API, LangChain/LangGraph workflows, and a Neo4j knowledge graph for continuous learning from feedback.
 
-1. **jiraCSAgent** - Next.js frontend application with multi-agent email processing
-2. **KnowledgeBase** - Python-based knowledge extraction agents using Graphiti
+### Core Components
+
+1. **jiraCSAgent** - Next.js 15 frontend with React 19, featuring multi-agent email processing pipelines
+2. **KnowledgeBase** - Python-based knowledge extraction and feedback analysis using Graphiti temporal knowledge graphs
 
 ## Development Commands
 
@@ -16,92 +18,94 @@ This is a multi-agent email processing system called **AgentiMailCS** that intel
 cd jiraCSAgent
 
 # Development
-npm run dev                 # Start development server
+npm run dev                 # Start development server on http://localhost:3000
 npm run build              # Build for production
 npm run start              # Start production server
 
-# Code Quality
+# Code Quality & Type Safety
 npm run lint               # Run ESLint
-npm run type-check         # Run TypeScript type checking
+npm run type-check         # Run TypeScript type checking (always run before commits)
 
-# Database Operations
-npm run db:generate        # Generate Prisma client
-npm run db:push           # Push schema to database
-npm run db:migrate        # Run database migrations
-npm run db:studio         # Open Prisma Studio
+# Database Operations (PostgreSQL + Prisma)
+npm run db:generate        # Generate Prisma client after schema changes
+npm run db:push           # Push schema to database (development)
+npm run db:migrate        # Create and run database migrations (production)
+npm run db:studio         # Open Prisma Studio for database GUI
 npm run db:seed           # Seed database with test data
 ```
 
 ### Python Knowledge Base
 ```bash
-# Install Python dependencies (from root)
-# Uses uv for dependency management as defined in pyproject.toml
+# Install Python dependencies (from project root)
+# Uses uv for fast Python package management
 pip install -e .
 
-# Run knowledge extraction agents
-python -m KnowledgeBase.agents.extractor
-python -m KnowledgeBase.agents.query
+# Run knowledge extraction and analysis agents
+python -m KnowledgeBase.agents.extractor    # Extract knowledge from feedback
+python -m KnowledgeBase.agents.query        # Query knowledge graph
 ```
 
 ## Architecture
 
-### jiraCSAgent Structure
-```
-jiraCSAgent/src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes for email processing
-│   │   ├── email/process/ # Main email processing endpoint
-│   │   ├── emails/        # Email management
-│   │   └── processing-results/ # Results and statistics
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Dashboard page
-├── components/            # React components
-│   ├── EmailProcessingDashboard.tsx # Main monitoring interface
-│   ├── EmailTestForm.tsx  # Email testing interface
-│   └── ServiceStatus.tsx  # Service health monitoring
-├── lib/                   # Core business logic
-│   ├── agents/           # AI agents for email processing
-│   │   ├── email-classifier.ts    # Email classification
-│   │   ├── jira-simple-handler.ts # Simple Jira issues
-│   │   ├── jira-complex-handler.ts # Complex technical issues
-│   │   ├── general-handler.ts     # General inquiries
-│   │   └── feedback-agent.ts      # Feedback processing
-│   ├── email/            # Email service integrations
-│   │   ├── outlook-service.ts     # Microsoft Graph API
-│   │   ├── gmail-service.ts       # Google Gmail API
-│   │   └── email-manager.ts       # Service coordinator
-│   ├── workflow/         # LangGraph workflow orchestration
-│   │   └── orchestrator-langgraph.ts
-│   └── services/         # External service clients
-└── types/                # TypeScript type definitions
-```
+### Multi-Agent Processing Pipeline
 
-### Multi-Agent Workflow
-The system uses three specialized agents:
-1. **Jira Simple Handler** - Login issues, field settings, Confluence integration
-2. **Jira Complex Handler** - Script Runner, external integrations, log analysis  
-3. **General Handler** - Other types of inquiries
+The system implements a sophisticated LangGraph-based workflow that processes emails through multiple specialized AI agents:
 
-### Database Schema
-Uses PostgreSQL with Prisma ORM. Key models:
-- **Email** - Stores incoming emails with metadata
-- **ProcessingResult** - AI classification and processing results
-- **Feedback** - User feedback for system improvement
-- **EmailReply** - Generated responses to emails
+1. **Email Ingestion** → **Classification** → **Routing** → **Processing** → **Response Generation** → **Feedback Loop**
+
+### Agent Specialization Strategy
+
+- **Email Classifier Agent** (`email-classifier.ts`) - Uses OpenAI to categorize emails into JIRA_SIMPLE, JIRA_COMPLEX, or GENERAL based on content analysis and context clues
+- **Jira Simple Handler** (`jira-simple-handler.ts`) - Handles basic user issues like login problems, field configurations, and Confluence integration questions
+- **Jira Complex Handler** (`jira-complex-handler.ts`) - Processes technical issues involving Script Runner, external integrations, log analysis, and advanced troubleshooting
+- **General Handler** (`general-handler.ts`) - Manages non-Jira inquiries and general customer support questions
+- **Feedback Agent** (`feedback-agent.ts`) - Analyzes classification errors and generates improvement suggestions for system learning
+
+### LangGraph Workflow Orchestration
+
+The `orchestrator-langgraph.ts` coordinates the entire processing pipeline using LangGraph's state machine approach, enabling:
+- Conditional routing based on classification results
+- Error handling and retry mechanisms
+- State persistence across processing steps
+- Parallel processing capabilities for multiple emails
+
+### Database Schema (PostgreSQL + Prisma)
+
+**Core Models:**
+- `Email` - Stores incoming emails with source tracking (Outlook/Gmail), priority levels, and attachment metadata
+- `ProcessingResult` - Contains AI classification results with confidence scores, reasoning, key indicators, and processing times
+- `Feedback` - Captures user corrections and ratings for continuous system improvement
+- `EmailReply` - Manages generated responses with send status tracking
+
+**Key Relationships:**
+- One-to-one: Email ↔ ProcessingResult
+- One-to-many: Email → Attachments
+- One-to-one: ProcessingResult ↔ Feedback
+- One-to-one: ProcessingResult ↔ EmailReply
+
+### Knowledge Graph Integration
+
+The system integrates with **Graphiti** (temporal knowledge graphs) via the `KnowledgeBase` Python component:
+- Automatic feedback data ingestion into Neo4j
+- Pattern analysis for classification improvements
+- RAG-based insights for system enhancement
+- Historical trend analysis for agent performance
 
 ## Configuration
 
-### Environment Variables (.env.local)
+### Required Environment Variables
+Create `.env.local` in the jiraCSAgent directory:
+
 ```bash
-# OpenAI API Configuration
+# OpenAI API (required for AI processing)
 OPENAI_API_KEY=your_api_key_here
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4
 
-# Database
+# PostgreSQL Database (required)
 DATABASE_URL=postgresql://user:password@localhost:5432/agentimailcs
 
-# Email Integrations (optional)
+# Email Service Integration (optional - for production email fetching)
 OUTLOOK_CLIENT_ID=your_outlook_client_id
 OUTLOOK_CLIENT_SECRET=your_outlook_client_secret
 OUTLOOK_TENANT_ID=your_outlook_tenant_id
@@ -109,77 +113,81 @@ OUTLOOK_TENANT_ID=your_outlook_tenant_id
 GMAIL_CLIENT_ID=your_gmail_client_id
 GMAIL_CLIENT_SECRET=your_gmail_client_secret
 
-# Application
+# Application Security
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_secret_here
 ```
 
-### Neo4j Integration (for Graphiti Knowledge Base)
+### Neo4j Knowledge Graph Setup
+For Graphiti knowledge base integration:
+
 ```bash
-# Neo4j Configuration
+# Start Neo4j with Docker (required for KnowledgeBase component)
+docker run --name neo4j-graphiti \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/test1234 \
+  neo4j:5.22.0
+
+# Environment variables for Python integration
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=test1234
 NEO4J_DATABASE=neo4j
-
-# Start Neo4j with Docker
-docker run --name neo4j-graphiti -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/test1234 neo4j:5.22.0
 ```
-
-## Key Features
-
-### Email Processing Pipeline
-1. **Email Ingestion** - Fetch from Outlook/Gmail APIs
-2. **Content Analysis** - Extract text, detect logs/attachments
-3. **AI Classification** - Categorize into JIRA_SIMPLE, JIRA_COMPLEX, or GENERAL
-4. **Agent Processing** - Route to appropriate specialized agent
-5. **Response Generation** - Generate contextual responses
-6. **Feedback Collection** - Capture user feedback for improvement
-
-### Email Classification Categories
-- **JIRA_SIMPLE** - Basic Jira issues (login, fields, Confluence)
-- **JIRA_COMPLEX** - Technical issues (Script Runner, logs, integrations)
-- **GENERAL** - Non-Jira related inquiries
-
-### Knowledge Base Integration
-- Uses Graphiti for temporal knowledge graphs
-- Stores feedback data for pattern analysis
-- Enables RAG-based insights and system improvement
-- Python agents extract and query knowledge
 
 ## API Endpoints
 
-### Core Processing
-- `POST /api/email/process` - Process single email
-- `GET /api/emails` - List processed emails
-- `GET /api/processing-results/stats` - Processing statistics
+### Core Email Processing
+- `POST /api/email/process` - Main endpoint to process emails through the multi-agent pipeline
+- `GET /api/emails` - Retrieve processed emails with pagination
+- `GET /api/emails/[id]` - Get specific email details and processing results
+- `GET /api/processing-results/stats` - Get processing analytics and performance metrics
 
-### Testing & Monitoring
-- `POST /api/test-ai-service` - Test AI service connection
-- `GET /api/email/process` - Service health status
+### Email Reply Management
+- `GET /api/email-replies` - List generated email replies
+- `POST /api/email-replies` - Create or update email replies
 
-## Development Notes
+### System Monitoring
+- `POST /api/test-ai-service` - Test OpenAI API connectivity and agent functionality
+- `GET /api/processing-results` - Monitor processing status and results
 
-### Framework Versions
-- **Next.js 15** with React 19
-- **TypeScript 5.7** for type safety
+### Email Classification Categories
+- **JIRA_SIMPLE** - Basic Jira issues (login, field settings, Confluence integration)
+- **JIRA_COMPLEX** - Technical issues (Script Runner, integrations, log analysis, advanced troubleshooting)
+- **GENERAL** - Non-Jira related inquiries and general support questions
+
+## Development Workflow
+
+### Before Making Changes
+1. Always run type checking: `npm run type-check`
+2. Run linting: `npm run lint`
+3. For database schema changes: `npm run db:generate && npm run db:push`
+
+### Key Technologies
+- **Next.js 15** with React 19 and App Router
+- **TypeScript 5.7** for strict type safety
 - **Tailwind CSS 3.4** for styling
-- **Prisma 5.22** for database ORM
-- **LangChain 0.3** + **LangGraph 0.6** for AI workflows
+- **Prisma 5.22** for PostgreSQL ORM
+- **LangChain 0.3** + **LangGraph 0.2** for AI agent workflows
+- **OpenAI GPT-4** for email classification and processing
 
-### Database Operations
-Always run type checking and database migrations when making schema changes:
-```bash
-npm run type-check
-npm run db:generate
-npm run db:push
-```
+### Testing Without Email Integration
+- Use `POST /api/test-ai-service` to test AI processing pipeline
+- Use the `EmailTestForm` component in the UI for manual testing
+- Mock email data is available in the test endpoints
 
-### Testing Email Processing
-Use the `/api/test-ai-service` endpoint or the EmailTestForm component to test AI processing without real email integration.
+### Python-TypeScript Bridge
+The `KnowledgeBase/` directory contains Python agents that integrate with the Next.js app:
+- `agents/extractor.py` - Extracts knowledge from feedback data
+- `agents/query.py` - Queries the knowledge graph for insights
+- Communication happens via the Graphiti integration layer
 
-### Python Integration
-The KnowledgeBase directory contains Python agents that work with the Graphiti knowledge graph for feedback analysis and system improvement.
+### Component Structure
+- **Dashboard**: `EmailProcessingDashboard.tsx` - Main monitoring interface
+- **Testing**: `EmailTestForm.tsx` - Manual email testing interface
+- **Status**: `ServiceStatus.tsx` - System health monitoring
+- **Details**: `EmailDetailView.tsx` - Individual email processing results
+- **Compose**: `EmailReplyComposer.tsx` - Reply generation and editing
 
 # Using Gemini CLI for Large Codebase Analysis
 

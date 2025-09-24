@@ -1,0 +1,15 @@
+{
+  "forms": {
+    "Project ID": "TEST-1",
+    "Issue Type": "Support Request",
+    "Reporter": "API.TEST",
+    "Created": "2025/9/24 10:15",
+    "Updated": "2025/9/24 10:15",
+    "Summary": "API測試工單",
+    "Comment": {
+      "Created": "2025/9/24 10:15",
+      "Updated": "2025/9/24 10:15",
+      "Content": "這是一個通過API發送的測試工單，請協助處理登入問題。"
+    }
+  }
+}
